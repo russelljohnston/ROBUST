@@ -1,5 +1,15 @@
 # ROBUST
-Module to compute the Tc and Tv completeness statistics
+Module to compute the Tc and Tv completeness statistics:
+
+Authors:
+
+Russell Johnston
+
+Luis Teodoro
+
+Martin Hendry
+
+
 
 Based on the following publications:
 
