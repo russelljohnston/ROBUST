@@ -18,7 +18,10 @@
 ! COMPUTES   (i) THE JTH07 Tc and Tv statisitcs taking into account a bright apparent
 !                magnitude limit of a given survey
 !
-! BOTH SUBROUTINES USE sort3.f and indexx.f from Numerical Recipes. 
+! BOTH SUBROUTINES USE SORT3.F90 based on  Numerical Recipes, Created by 
+! http://www.science-softcon.de/autochem/box-dir/box_html/998.html
+!
+!
 ! BOTH SUBROUTINES REQUIRE AS INPUT:
 !
 ! Ngal = Number of galaxies in sample
@@ -42,7 +45,7 @@ contains
     implicit none
     integer Ngal,mstar_max
     PARAMETER (mstar_max=200)
-    integer m,igal,jgal,iwksp(Ngal),ii,tc_inc
+    integer m,igal,jgal,iwksp(Ngal),tc_inc
     real(kind=4) :: t_v(mstar_max),zmax,am(Ngal),mu(Ngal),mt(Ngal),mag_max,bin
     real(kind=4) :: appml(mstar_max),mag_min,absmlim,t_c(mstar_max),maxmaglim
     real(kind=4) :: varsum,s1,s2,s3,s4,r(mstar_max,Ngal),n(mstar_max,Ngal),p(mstar_max,Ngal)
@@ -66,7 +69,8 @@ contains
     write(90,*)'# m*        Tc(m*)      Tv(m*)'
 
     print *, 'computing Tc first'
-    call sort3(Ngal,mu,mt,am,wksp,iwksp)
+    !    call sort3(Ngal,mu,mt,am,wksp,iwksp)
+    call SORT3(Ngal,mu,mt,am)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)        
        t_c(m)   = 0.0        
@@ -97,14 +101,13 @@ contains
           t_c(m) = t_c(m) + zeta(m,igal) - 0.50        
 556    enddo
        t_c(m) = t_c(m)/sqrt(varsum)
-       !     print*,m,appml(m),t_c(m)
-111    format(i4,1x,f6.2,1x,f11.6)
     enddo
 
     print *,'Now computing Tv'
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
-    call sort3(Ngal,am,mt,mu,wksp,iwksp)
+    !    call sort3(Ngal,am,mt,mu,wksp,iwksp)
+    call SORT3(Ngal,am,mt,mu)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1) 
 
@@ -154,9 +157,9 @@ contains
     implicit none
     integer ngal,mstar_max
     PARAMETER (mstar_max=200)
-    integer       :: m,igal,jgal,j,tc_inc,iwksp(ngal),ii
+    integer       :: m,igal,jgal,tc_inc,iwksp(ngal)
     real(kind=4)  :: mt(ngal),mu(ngal),am(ngal),zmax,zmin,nn(mstar_max,ngal)
-    real(kind=4)  :: appml(mstar_max),appm_min,t_c(mstar_max),t_v(mstar_max)
+    real(kind=4)  :: appml(mstar_max),t_c(mstar_max),t_v(mstar_max)
     real(kind=4)  :: varsum,s1,s2,s3,s4,r(mstar_max,ngal),n(mstar_max,ngal),bin
     real(kind=4)  :: absmlim_f,tau(mstar_max,ngal),rr(mstar_max,ngal),delta_mu,mag_min
     real(kind=4)  :: zeta(mstar_max,ngal),var(mstar_max,ngal),varsumzeta,delta_am
@@ -176,9 +179,10 @@ contains
        print*, 'too many steps in tc_inc (',tc_inc,'). nominaly set to 200,  increase mstar_max'
        stop
     endif
-    write(91,*)'# m*        Tc(m*)      Tv(m*)'
+    write(90,*)'# m*        Tc(m*)      Tv(m*)'
     print *, 'computing Tc first'
-    call sort3(Ngal,mu,mt,am,wksp,iwksp)
+    !    call sort3(Ngal,mu,mt,am,wksp,iwksp)
+    call SORT3(Ngal,mu,mt,am)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)
        t_c(m)   = 0.0        
@@ -227,7 +231,8 @@ contains
     print *,'Now computing Tv'
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
-    call sort3(Ngal,am,mt,mu,wksp,iwksp)
+    !    call sort3(Ngal,am,mt,mu,wksp,iwksp)
+    call SORT3(Ngal,am,mt,mu)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)
        t_v(m)   = 0.0        
@@ -276,118 +281,106 @@ contains
     close(90)
   END SUBROUTINE tctv_JTH07
 
-!#### NUMERICAL RECIPES SUBROUTINES ####!!
 
-    SUBROUTINE indexx(n,arr,indx)
-    implicit none
-    INTEGER n,indx(n),M,NSTACK
-    real :: arr(n)
-    PARAMETER (M=7,NSTACK=50)
-    INTEGER i,indxt,ir,itemp,j,jstack,k,l,istack(NSTACK)
-    real(kind=4) :: a
-    do 11 j=1,n
-        indx(j)=j
-11    continue
-      jstack=0
-      l=1
-      ir=n
-1     if(ir-l.lt.M)then
-        do 13 j=l+1,ir
-          indxt=indx(j)
-          a=arr(indxt)
-          do 12 i=j-1,1,-1
-            if(arr(indx(i)).le.a)goto 2
-            indx(i+1)=indx(i)
-12        continue
-          i=0
-2         indx(i+1)=indxt
-13      continue
-        if(jstack.eq.0)return
-        ir=istack(jstack)
-        l=istack(jstack-1)
-        jstack=jstack-2
-      else
-        k=(l+ir)/2
-        itemp=indx(k)
-        indx(k)=indx(l+1)
-        indx(l+1)=itemp
-        if(arr(indx(l+1)).gt.arr(indx(ir)))then
-          itemp=indx(l+1)
-          indx(l+1)=indx(ir)
-          indx(ir)=itemp
-        endif
-        if(arr(indx(l)).gt.arr(indx(ir)))then
-          itemp=indx(l)
-          indx(l)=indx(ir)
-          indx(ir)=itemp
-        endif
-        if(arr(indx(l+1)).gt.arr(indx(l)))then
-          itemp=indx(l+1)
-          indx(l+1)=indx(l)
-          indx(l)=itemp
-        endif
-        i=l+1
-        j=ir
-        indxt=indx(l)
-        a=arr(indxt)
-3       continue
-          i=i+1
-        if(arr(indx(i)).lt.a)goto 3
-4       continue
-          j=j-1
-        if(arr(indx(j)).gt.a)goto 4
-        if(j.lt.i)goto 5
-        itemp=indx(i)
-        indx(i)=indx(j)
-        indx(j)=itemp
-        goto 3
-5       indx(l)=indx(j)
-        indx(j)=indxt
-        jstack=jstack+2
-        if(jstack.gt.NSTACK)stop 'NSTACK too small in indexx'
-        if(ir-i+1.ge.j-l)then
-          istack(jstack)=ir
-          istack(jstack-1)=i
-          ir=j-1
-        else
-          istack(jstack)=j-1
-          istack(jstack-1)=l
-          l=i
-        endif
-      endif
-      goto 1
-      END 
-
-
-    SUBROUTINE sort3(n,ra,rb,rc,wksp,iwksp)
-	implicit none
-	INTEGER n,iwksp(n)
-	 real ::ra(n),rb(n),rc(n),wksp(n)
-!CU    USES indexx
-	INTEGER j
-	call indexx(n,ra,iwksp)
-	do 11 j=1,n
-		wksp(j)=ra(j)
-11    continue
-	do 12 j=1,n
-		ra(j)=wksp(iwksp(j))
-12    continue
-	do 13 j=1,n
-		wksp(j)=rb(j)
-13    continue
-	do 14 j=1,n
-		rb(j)=wksp(iwksp(j))
-14    continue
-	do 15 j=1,n
-		wksp(j)=rc(j)
-15    continue
-	do 16 j=1,n
-		rc(j)=wksp(iwksp(j))
-16    continue
-
-      return
-      END
-
+  SUBROUTINE SORT3(N,Ra,Rb,Rc)
+    IMPLICIT NONE
+    INTEGER :: N
+    REAL , DIMENSION(N) :: Ra , Rb , Rc
+    INTENT (IN) N
+    INTENT (INOUT) Ra , Rb , Rc
+    INTEGER :: i , ir , j , l
+    REAL :: rra , rrb , rrc
+    !
+    !-----------------------------------------------------------------------
+    !
+    !     argrument list.
+    !
+    !     name      type              description.
+    !     n         integer           length of arrays ra, rb, rc & rd.
+    !     (unchanged on exit).
+    !
+    !     ra        array of real     array of length n to be sorted into
+    !     ascending numerical order.
+    !     (contains result on exit).
+    !
+    !     rb        array of real     array of length n to be sorted into
+    !     an order corresponding to that of ra.
+    !     (contains result on exit).
+    !
+    !     rc        array of real     array of length n to be sorted into
+    !     an order corresponding to that of ra.
+    !     (contains result on exit).
+    !
+    !-----------------------------------------------------------------------
+    !
+    !     looks at array ra and sorts it into ascending order, as well as
+    !     making the corresponding rearrangements to rb, rc, & rd. the
+    !     heapsort algorithm is used.
+    !
+    !     based on numerical recipes, the art of scientific computing,
+    !     section 8.2, by press, flannery, teukolsky & vetterling,
+    !     cambridge university press, 1987.
+    !
+    !     modified by: david lary
+    !     ----------
+    !
+    !     date started : 28/9/1991
+    !
+    !     last modified: 28/9/1991
+    !
+    !-----------------------------------------------------------------------
+    !
+    l = N/2 + 1
+    ir = N
+    DO WHILE ( .TRUE. )
+       IF ( l>1 ) THEN
+          l = l - 1
+          rra = Ra(l)
+          rrb = Rb(l)
+          rrc = Rc(l)
+       ELSE
+          rra = Ra(ir)
+          rrb = Rb(ir)
+          rrc = Rc(ir)
+          Ra(ir) = Ra(1)
+          Rb(ir) = Rb(1)
+          Rc(ir) = Rc(1)
+          ir = ir - 1
+          IF ( ir<=1 ) THEN
+             Ra(1) = rra
+             Rb(1) = rrb
+             Rc(1) = rrc
+             EXIT
+          ENDIF
+       ENDIF
+       i = l
+       j = l + l
+       DO WHILE ( .TRUE. )
+          IF ( .NOT..TRUE. ) THEN
+             RETURN
+          ELSEIF ( j<=ir ) THEN
+             IF ( j<ir ) THEN
+                IF ( Ra(j)<Ra(j+1) ) j = j + 1
+             ENDIF
+             IF ( rra<Ra(j) ) THEN
+                Ra(i) = Ra(j)
+                Rb(i) = Rb(j)
+                Rc(i) = Rc(j)
+                i = j
+                j = j + j
+             ELSE
+                j = ir + 1
+             ENDIF
+             CYCLE
+          ENDIF
+          Ra(i) = rra
+          Rb(i) = rrb
+          Rc(i) = rrc
+          GOTO 100
+       ENDDO
+       EXIT
+100 ENDDO
+    END SUBROUTINE SORT3
 
 
 

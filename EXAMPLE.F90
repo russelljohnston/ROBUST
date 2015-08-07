@@ -1,7 +1,5 @@
-    ! compile:  gfortran  EXAMPLE.F90 -o EXAMPLE.exe
-    ! then run ./EXAMPLE.exe
-    include 'ROBUST.F90'
-    program example
+  include 'ROBUST.F90'
+  program example
 
     use robust
 
@@ -17,9 +15,9 @@
     filein='testdata.txt'
     open(unit=14,file=filein,status='old')
     do i = 1,ngal
-        read(14,*,err=998,end=999)mt(i),am(i),mu(i)
-    998 enddo
-    999 close(14)
+       read(14,*,err=998,end=999)mt(i),am(i),mu(i)
+998 enddo
+999 close(14)
 
 
     print *,"TEST DATA READ IN SUCCESSFULLY"
@@ -39,22 +37,22 @@
     print *,'1 - Rauzy 2001 (faint app mag lim only)'
     print *,'2 - Johnston et al 2007  - faint and bright lim'
     read *, answer
-     if (answer.eq.1)then
-        fileout='tctv_faint_results.out'
-        open(unit=90,file=trim(fileout),status='unknown')
-        rewind(90)
-        call tctv_R01(ngal,mag_min,mag_max,mu,mt,am,bin)
+    if (answer.eq.1)then
+       fileout='tctv_faint_results.out'
+       open(unit=90,file=trim(fileout),status='unknown')
+       rewind(90)
+       call tctv_R01(ngal,mag_min,mag_max,mu,mt,am,bin)
     elseif (answer.eq.2)then
-        !open unit 91 for writing out file in tctv_bright subroutine
-        fileout='tctv_bright_results.out'
-        open(unit=90,file=trim(fileout),status='unknown')
-        rewind(90)
-        delta_mu=0.5
-        delta_am=0.5
-        call tctv_JTH07(ngal,mag_min,mag_max,mu,mt,am,bin,delta_am,delta_mu)
+       !open unit 91 for writing out file in tctv_bright subroutine
+       fileout='tctv_bright_results.out'
+       open(unit=90,file=trim(fileout),status='unknown')
+       rewind(90)
+       delta_mu=0.5
+       delta_am=0.5
+       call tctv_JTH07(ngal,mag_min,mag_max,mu,mt,am,bin,delta_am,delta_mu)
     elseif (answer.ne.1 .or. answer.ne.2)then
-        print*, 'you must enter 1 or 2'
-        goto 111
+       print*, 'you must enter 1 or 2'
+       goto 111
     endif
 
-    end program example
+  end program example
