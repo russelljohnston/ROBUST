@@ -53,11 +53,11 @@ contains
     real(kind=4) :: tau(mstar_max,Ngal)
 
 
-    print *,'CALLING: SUBROUTINE TCTV_FAINT'
+    print *,'CALLING: SUBROUTINE TCTV_R01'
     print *,'-----------------------------------'
-    print *, 'faint app mag limit  = ',mag_min
-    print *, 'bright app mag limit = ',mag_max
-    print *, 'Tc,Tv bin incrememnt = ',bin
+    print *, 'faint app mag limit of sample  = ',mag_min
+    print *, 'bright app mag limit of sample = ',mag_max
+    print *, 'Tc(m*),Tv(m*) bin incrememnt   = ',bin
     print *,'-----------------------------------'
 
     maxmaglim = mag_max + 1.0 !making sure m* for Tc,Tv go beyond the survey limit
@@ -74,80 +74,86 @@ contains
     zeta  = 0.0
     appml = 0.0
     t_c   = 0.0
-    call SORT3(Ngal,mu,mt,am)
+    call SORT3(Ngal,mu,mt,am) ! sort in terms of Mu.
     do m = 1,tc_inc
-        appml(m) = mag_min + bin*(m-1)
-        varsum = 0.0
-        do igal = 1,Ngal
+       appml(m) = mag_min + bin*(m-1)
+       varsum = 0.0
+       do igal = 1,Ngal
           s1			= 0.0
           s2			= 0.0
-          if(mt(igal) .le. appml(m)) then !REMOVE ALL GALS > m*
-            absmlim = appml(m)- mu(igal)
-                if(am(igal) .le. absmlim) then
-                    do jgal = igal,1,-1
 
-                        if(mt(jgal) .le. appml(m)) then
-                            if(am(jgal) .le. absmlim) then
-                                if(mu(jgal) .le. mu(igal)) then
-                                    if(am(jgal) .le. am(igal))s1 = s1 + 1.0
-                                    if(am(jgal) .gt. am(igal))s2 = s2 + 1.0
-                                endif
-                            endif
-                        endif
-                    enddo
-                    r(m,igal) = s1
-                    n(m,igal) = s1+s2          
-                    zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)                         
-                    var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
-                    if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
-                    t_c(m) = t_c(m) + zeta(m,igal) - 0.50
-                endif
-            endif
-        enddo
-        t_c(m) = t_c(m)/sqrt(varsum)
+          if(mt(igal) .le. appml(m)) then !Select only galaxies <= trial m*
+             absmlim = appml(m)- mu(igal)  ! Define absolute magnitude limit
+             if(am(igal) .le. absmlim) then
+                do jgal = igal,1,-1
+                   if(mt(jgal) .le. appml(m)) then
+                      if(am(jgal) .le. absmlim) then
+                         if(mu(jgal) .le. mu(igal)) then
+                            if(am(jgal) .le. am(igal))s1 = s1 + 1.0
+                            if(am(jgal) .gt. am(igal))s2 = s2 + 1.0
+                         endif
+                      endif
+                   endif
+                enddo
+
+                r(m,igal) = s1
+                n(m,igal) = s1+s2          
+                zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0) !random variable, zeta
+                var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0)) !variance
+                if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
+                t_c(m) = t_c(m) + zeta(m,igal) - 0.50
+             endif
+          endif
+       enddo
+       t_c(m) = t_c(m)/sqrt(varsum)
     enddo
 
     print *,'Now computing Tv'
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
     call SORT3(Ngal,am,mt,mu)
+
+    appml = 0.0
+    t_v   = 0.0
+    r     = 0.0
+    p     = 0.0
+    tau   = 0.0
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1) 
-
-       t_v(m)   = 0.0
-       varsum   = 0.0 
+       varsum   = 0.0
 
        do igal = 1,Ngal
           s3		= 0.0
           s4		= 0.0        
-          r(m,igal)	= 0.0
-          p(m,igal)	= 0.0
-          tau(m,igal)	= 0.0
 
-          if(mt(igal) .gt. appml(m)) goto 558 !REMOVE ALL GALS > m*                 
-          zmax= appml(m)-am(igal)
-          if(mu(igal) .gt. zmax) goto 558        
+          if(mt(igal) .le. appml(m)) then
+             zmax= appml(m)-am(igal)
+             if(mu(igal) .le. zmax) then
 
-          do jgal = igal,1,-1
-             if(mt(jgal) .gt. appml(m))  goto 557
-             if(mu(jgal) .gt. zmax)      goto 557
-             if(am(jgal) .gt. am(igal))  goto 557   
-             if(mu(jgal) .le. mu(igal))s3 = s3 + 1.0 					
-             if(mu(jgal) .gt. mu(igal))s4 = s4 + 1.0
-557       enddo
-          r(m,igal) = s3
-          p(m,igal) = s3+s4 
+                do jgal = igal,1,-1
+                   if(mt(jgal) .le. appml(m)) then
+                      if(mu(jgal) .le. zmax) then
+                         if(am(jgal) .le. am(igal)) then
+                            if(mu(jgal) .le. mu(igal))s3 = s3 + 1.0
+                            if(mu(jgal) .gt. mu(igal))s4 = s4 + 1.0
+                         endif
+                      endif
+                   endif
+                enddo
+                r(m,igal) = s3
+                p(m,igal) = s3+s4 
 
-          tau(m,igal)= r(m,igal)/(p(m,igal)+1.0)                 
-          var(m,igal) = (p(m,igal)-1.0)/(12.0*(p(m,igal)+1.0))  
-          if(var(m,igal) .ne. 0.0)varsum = varsum +var(m,igal)                          
-          t_v(m) = t_v(m) + tau(m,igal) -0.50              
-558    enddo
+                tau(m,igal)= r(m,igal)/(p(m,igal)+1.0)                 
+                var(m,igal) = (p(m,igal)-1.0)/(12.0*(p(m,igal)+1.0))  
+                if(var(m,igal) .ne. 0.0)varsum = varsum +var(m,igal)                          
+                t_v(m) = t_v(m) + tau(m,igal) -0.50
+             endif
+          endif
+       enddo
        t_v(m) = t_v(m)/sqrt(varsum)
+112    format(f6.2,1x,f12.4,1x,f12.4)
        write(6,112)appml(m),t_c(m),t_v(m)
        write(90,112)appml(m),t_c(m),t_v(m)
-112    format(f6.2,1x,f12.4,1x,f12.4)
-
     enddo
     close(90)
 
@@ -199,33 +205,35 @@ contains
           s1  = 0.0
           s2  = 0.0
 
-          if(mt(igal).gt.appml(m)) goto 556	!REMOVE ALL GALS > m*
-          if(mt(igal).lt.mag_min)  goto 556
-          absmlim_f = appml(m)- mu(igal) !DEFINE ABSOLUTE MAG FAINT LIM
-          absmlim_b = mag_min - mu(igal)+delta_mu !DEFINE ABSOLUTE MAG BRIGHT LIM 
-          if(am(igal).lt.absmlim_b) goto 556
-          if(am(igal).gt.absmlim_f) goto 556  
+          if(mt(igal).le.appml(m).and. mt(igal).ge.mag_min) then	!REMOVE ALL GALS > m*
+             absmlim_f = appml(m)- mu(igal) !DEFINE ABSOLUTE MAG FAINT LIM
+             absmlim_b = mag_min - mu(igal)+delta_mu !DEFINE ABSOLUTE MAG BRIGHT LIM 
+             if(am(igal).ge.absmlim_b .and. am(igal).le.absmlim_f) then
 
-          do jgal = igal,1,-1
-             if(am(jgal)  .lt. absmlim_b)  goto 555
-             if(am(jgal)  .gt. absmlim_f)  goto 555  
-             if(mu(jgal)  .lt. mu(igal) - delta_mu) goto 601
+                do jgal = igal,1,-1
+                   if(am(jgal)  .ge. absmlim_b)  then
+                      if(am(jgal)  .le. absmlim_f)  then
+                         if(mu(jgal)  .lt. mu(igal) - delta_mu) goto 601
 
-             if(am(jgal) .le. am(igal))s1 = s1+1.0										
-             if(am(jgal) .gt. am(igal))s2 = s2 + 1.0  
+                         if(am(jgal) .le. am(igal))s1 = s1+1.0
+                         if(am(jgal) .gt. am(igal))s2 = s2 + 1.0
+                      endif
+                   endif
 
-555	  enddo
-601	  continue
-          r(m,igal) = s1
-          n(m,igal) = s1+s2  
-          zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)           
-          var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
-          varzeta(m,igal)=((zeta(m,igal)-0.50)**2.0)
+                enddo
+601             continue
+                r(m,igal) = s1
+                n(m,igal) = s1+s2  
+                zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)           
+                var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
+                varzeta(m,igal)=((zeta(m,igal)-0.50)**2.0)
 
-          if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
-          if(varzeta(m,igal).ne.0.0)varsumzeta = varsumzeta + varzeta(m,igal)
-          t_c(m) = t_c(m) + zeta(m,igal) - 0.50   
-556    enddo
+                if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
+                if(varzeta(m,igal).ne.0.0)varsumzeta = varsumzeta + varzeta(m,igal)
+                t_c(m) = t_c(m) + zeta(m,igal) - 0.50
+             endif
+          endif
+       enddo
 
        t_c(m) = t_c(m)/sqrt(varsum)
     enddo
@@ -234,46 +242,49 @@ contains
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
     call SORT3(Ngal,am,mt,mu)
+    rr  = 0.0
+    nn  = 0.0
+    tau = 0.0
+    t_v   = 0.0   
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)
-       t_v(m)   = 0.0        
-       varsum   = 0.0       
-
+       varsum   = 0.0
        do igal =1,Ngal 
           s3           = 0.0
           s4           = 0.0
-          rr(m,igal)   = 0.0
-          nn(m,igal)   = 0.0
-          tau(m,igal)  = 0.0 
 
-          if(mt(igal).gt.appml(m)) goto 559	!REMOVE ALL GALS > m*
-          if(mt(igal).lt.mag_min)  goto 559
-          zmax = appml(m)- am(igal)	!DEFINE ABSOLUTE MAG FAINT LIM
-          zmin = mag_min - am(igal)+delta_am !DEFINE ABSOLUTE MAG BRIGHT LIM 
-          if(mu(igal) .lt. zmin) goto 559
-          if(mu(igal) .gt. zmax) goto 559 
-          if(zmax .lt. zmin) goto 559 
+          if(mt(igal).le.appml(m).and.mt(igal).ge.mag_min) then!REMOVE ALL GALS > m*
+             zmax = appml(m)- am(igal)	!DEFINE ABSOLUTE MAG FAINT LIM
+             zmin = mag_min - am(igal)+delta_am !DEFINE ABSOLUTE MAG BRIGHT LIM 
+             if(mu(igal) .ge. zmin .and. mu(igal) .le. zmax) then
 
-          do jgal = igal,1,-1
-             if(mu(jgal)  .lt. zmin)     goto 558
-             if(mu(jgal)  .gt. zmax)     goto 558	
-             if(am(jgal)  .gt. am(igal)) goto 558			
-             if(am(jgal)  .lt. am(igal) - delta_am) goto 602							
+                   do jgal = igal,1,-1
+                      if(mu(jgal)  .ge. zmin)     then
+                         if(mu(jgal)  .le. zmax)     then
+                            if(am(jgal)  .le. am(igal)) then
+                               if(am(jgal)  .lt. am(igal) - delta_am) goto 602
 
-             if(mu(jgal) .le. mu(igal))s3 = s3+1.0
-             if(mu(jgal) .gt. mu(igal))s4 = s4+1.0
+                               if(mu(jgal) .le. mu(igal))s3 = s3+1.0
+                               if(mu(jgal) .gt. mu(igal))s4 = s4+1.0
 
-558	  enddo
-602	  continue
-          rr(m,igal) = s3
-          nn(m,igal) = s3+s4  
-          tau(m,igal)  = rr(m,igal)/(nn(m,igal)+1.0) 
+                            endif
+                         endif
+                      endif
 
-          var(m,igal)   = (nn(m,igal)-1.0)/(12.0*(nn(m,igal)+1.0))
-          if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
-          t_v(m) = t_v(m) + tau(m,igal) - 0.50   
+                   enddo
+602                continue
+                   rr(m,igal) = s3
+                   nn(m,igal) = s3+s4  
+                   tau(m,igal)  = rr(m,igal)/(nn(m,igal)+1.0) 
 
-559    enddo
+                   var(m,igal)   = (nn(m,igal)-1.0)/(12.0*(nn(m,igal)+1.0))
+                   if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
+                   t_v(m) = t_v(m) + tau(m,igal) - 0.50
+                !endif
+             endif
+          endif
+
+       enddo
        t_v(m) = t_v(m)/sqrt(varsum)
 112    format(f6.2,1x,f12.4,1x,f12.4)
        write(6,112)appml(m),t_c(m),t_v(m)
@@ -381,7 +392,7 @@ contains
        ENDDO
        EXIT
 100 ENDDO
-    END SUBROUTINE SORT3
+  END SUBROUTINE SORT3
 
 
 
