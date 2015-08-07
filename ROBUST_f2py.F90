@@ -4,6 +4,10 @@
 !            LUIS TEODORO     (luis.f.teodoro@nasa.gov)
 !               and 
 !            MARTIN HENDRY    (martin.hendry@glasgow.ac.uk)
+!##################################################################
+! This is a modified version of ROBUST.F90 for use of f2py conversion
+! to import in python.
+!##################################################################
 !
 ! THIS MODULE CONTAINS VARIOUS SUBROUTINES TO ESTIMATE MAGNITUDE COMPLETENESS FOR
 ! A MAGNITUDE-REDSHIFT SURVEY.
@@ -41,19 +45,25 @@ module ROBUST
   implicit none
 contains
 
-  SUBROUTINE tctv_R01(Ngal,mag_min,mag_max,mur,mtr,amr,bin)
+   SUBROUTINE tctv_R01(t_c,t_v,appml,tc_inc,mag_min,mag_max,mur,mtr,amr,bin,Ngal)
     implicit none
     integer, intent(in) :: Ngal
+    integer, intent(out) :: tc_inc
     integer mstar_max
     PARAMETER (mstar_max=200)
-    integer m,igal,jgal,tc_inc
+    integer m,igal,jgal
     real(kind=4), DIMENSION(ngal), intent(in)  :: mtr,mur,amr
     real(kind=4), intent(in) :: mag_max,mag_min,bin
-    real(kind=4) :: t_v(mstar_max),zmax,am(Ngal),mu(Ngal),mt(Ngal)
-    real(kind=4) :: appml(mstar_max),absmlim,t_c(mstar_max),maxmaglim
-    real(kind=4) :: varsum,s1,s2,s3,s4,r(mstar_max,Ngal),n(mstar_max,Ngal),p(mstar_max,Ngal)
+    real(kind=4), intent(out) ::  t_v(mstar_max),t_c(mstar_max),appml(mstar_max)
+    real(kind=4) :: zmax,am(Ngal),mu(Ngal),mt(Ngal)
+    real(kind=4) :: absmlim,maxmaglim,n(mstar_max,Ngal),p(mstar_max,Ngal)
+    real(kind=4) :: varsum,s1,s2,s3,s4,r(mstar_max,Ngal)
     real(kind=4) :: zeta(mstar_max,Ngal),var(mstar_max,Ngal)
     real(kind=4) :: tau(mstar_max,Ngal)
+
+    am = amr
+    mu = mur
+    mt = mtr
 
 
     print *,'CALLING: SUBROUTINE TCTV_R01'
@@ -69,7 +79,6 @@ contains
        print*, 'too many steps in tc_inc (',tc_inc,'). nominaly set to 200,  increase mstar_max'
        stop
     endif
-    write(90,*)'# m*        Tc(m*)      Tv(m*)'
 
     print *, 'computing Tc first'
     r	  = 0.0
@@ -85,8 +94,8 @@ contains
           s1			= 0.0
           s2			= 0.0
 
-          if(mt(igal) .le. appml(m)) then !Select only galaxies <= trial m*
-             absmlim = appml(m)- mu(igal)  ! Define absolute magnitude limit
+          if(mt(igal) .le. appml(m)) then
+             absmlim = appml(m)- mu(igal)
              if(am(igal) .le. absmlim) then
                 do jgal = igal,1,-1
                    if(mt(jgal) .le. appml(m)) then
@@ -101,8 +110,8 @@ contains
 
                 r(m,igal) = s1
                 n(m,igal) = s1+s2          
-                zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0) !random variable, zeta
-                var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0)) !variance
+                zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)
+                var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
                 if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
                 t_c(m) = t_c(m) + zeta(m,igal) - 0.50
              endif
@@ -113,7 +122,7 @@ contains
 
     print *,'Now computing Tv'
     print *,''
-    print *,'# m*    Tc(m*)        Tv(m*)'
+!    print *,'# m*    Tc(m*)        Tv(m*)'
     call SORT3(Ngal,am,mt,mu)
 
     appml = 0.0
@@ -154,35 +163,32 @@ contains
           endif
        enddo
        t_v(m) = t_v(m)/sqrt(varsum)
-112    format(f6.2,1x,f12.4,1x,f12.4)
-       write(6,112)appml(m),t_c(m),t_v(m)
-       write(90,112)appml(m),t_c(m),t_v(m)
     enddo
-    close(90)
 
   END SUBROUTINE tctv_R01
 
 
 
-  SUBROUTINE tctv_JTH07(ngal,mag_min,mag_max,mur,mtr,amr,bin,delta_am,delta_mu)
+  SUBROUTINE tctv_JTH07(t_c,t_v,appml,tc_inc,mag_min,mag_max,mur,mtr,amr,bin,delta_am,delta_mu,ngal)
 
     implicit none
     integer :: mstar_max
     integer, intent(in) :: ngal
+    integer, intent(out) :: tc_inc
     PARAMETER (mstar_max=200)
-    integer       :: m,igal,jgal,tc_inc
+    integer       :: m,igal,jgal
 
     real(kind=4), DIMENSION(ngal), intent(in)  :: mtr,mur,amr
     real(kind=4), intent(in) :: mag_max,mag_min,bin,delta_mu,delta_am
+    real(kind=4), intent(out) ::  t_v(mstar_max),t_c(mstar_max),appml(mstar_max)
     real(kind=4)  :: zmax,zmin,nn(mstar_max,ngal),mt(ngal),mu(ngal),am(ngal)
-    real(kind=4)  :: appml(mstar_max),t_c(mstar_max),t_v(mstar_max)
     real(kind=4)  :: varsum,s1,s2,s3,s4,r(mstar_max,ngal),n(mstar_max,ngal)
     real(kind=4)  :: absmlim_f,tau(mstar_max,ngal),rr(mstar_max,ngal)
     real(kind=4)  :: zeta(mstar_max,ngal),var(mstar_max,ngal),varsumzeta
     real(kind=4)  :: absmlim_b,varzeta(mstar_max,ngal),maxmaglim
 
     print *,'---------------------------------'
-    print *,'CALLING SUBROUTINE: tctv_bright'
+    print *,'CALLING SUBROUTINE: TCTV_JTH07'
     print *,'binsize  = ',bin
     print *,'delta_mu = ',delta_mu
     print *,'delta_am = ',delta_am
@@ -198,7 +204,6 @@ contains
        print*, 'too many steps in tc_inc (',tc_inc,'). nominaly set to 200,  increase mstar_max'
        stop
     endif
-    write(90,*)'# m*        Tc(m*)      Tv(m*)'
     print *, 'computing Tc first'
     call SORT3(Ngal,mu,mt,am)
 
@@ -214,9 +219,9 @@ contains
           s1  = 0.0
           s2  = 0.0
 
-          if(mt(igal).le.appml(m).and. mt(igal).ge.mag_min) then	!REMOVE ALL GALS > m*
-             absmlim_f = appml(m)- mu(igal) !DEFINE ABSOLUTE MAG FAINT LIM
-             absmlim_b = mag_min - mu(igal)+delta_mu !DEFINE ABSOLUTE MAG BRIGHT LIM 
+          if(mt(igal).le.appml(m).and. mt(igal).ge.mag_min) then
+             absmlim_f = appml(m)- mu(igal)
+             absmlim_b = mag_min - mu(igal)+delta_mu
              if(am(igal).ge.absmlim_b .and. am(igal).le.absmlim_f) then
 
                 do jgal = igal,1,-1
@@ -249,7 +254,7 @@ contains
 
     print *,'Now computing Tv'
     print *,''
-    print *,'# m*    Tc(m*)        Tv(m*)'
+    !print *,'# m*    Tc(m*)        Tv(m*)'
     call SORT3(Ngal,am,mt,mu)
     rr  = 0.0
     nn  = 0.0
@@ -261,10 +266,9 @@ contains
        do igal =1,Ngal 
           s3           = 0.0
           s4           = 0.0
-
-          if(mt(igal).le.appml(m).and.mt(igal).ge.mag_min) then!REMOVE ALL GALS > m*
-             zmax = appml(m)- am(igal)	!DEFINE ABSOLUTE MAG FAINT LIM
-             zmin = mag_min - am(igal)+delta_am !DEFINE ABSOLUTE MAG BRIGHT LIM 
+          if(mt(igal).le.appml(m).and.mt(igal).ge.mag_min) then
+             zmax = appml(m)- am(igal)
+             zmin = mag_min - am(igal)+delta_am
              if(mu(igal) .ge. zmin .and. mu(igal) .le. zmax) then
 
                    do jgal = igal,1,-1
@@ -295,11 +299,7 @@ contains
 
        enddo
        t_v(m) = t_v(m)/sqrt(varsum)
-112    format(f6.2,1x,f12.4,1x,f12.4)
-       write(6,112)appml(m),t_c(m),t_v(m)
-       write(90,112)appml(m),t_c(m),t_v(m)
     enddo
-    close(90)
   END SUBROUTINE tctv_JTH07
 
 
