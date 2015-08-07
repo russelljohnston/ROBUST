@@ -6,10 +6,19 @@
     implicit none
     integer, parameter :: ngal=7877
     integer            :: i,answer
-    real(kind=4)       :: mt(ngal),am(ngal),mu(ngal)
+    real(kind=4)       :: mt(ngal),am(ngal),mu(ngal),dmu
     real(kind=4)       :: bin,mag_min,mag_max,delta_mu,delta_am
     character(len=12)  :: filein
     character(len=23)  :: fileout
+
+
+    if(iargc().eq.2) then
+        call getarg(1,filein)
+        call getarg(2,fileout)
+    else
+       stop 'YOU PROBABLY HAVENT GOT THE RIGHT NUMBER OF INPUT PARAMS FROM SCRIPT'
+    end if
+
 
     print *,'Reading in test data'
     filein='testdata.txt'
@@ -38,16 +47,16 @@
     print *,'2 - Johnston et al 2007  - faint and bright lim - Tc & Tv estimator'
     read *, answer
     if (answer.eq.1)then
-       fileout='tctv_faint_results.out'
        open(unit=90,file=trim(fileout),status='unknown')
        rewind(90)
        call tctv_R01(ngal,mag_min,mag_max,mu,mt,am,bin)
     elseif (answer.eq.2)then
-       fileout='tctv_bright_results.out'
        open(unit=90,file=trim(fileout),status='unknown')
        rewind(90)
-       delta_mu=0.5
-       delta_am=0.5
+       print *,'input delta_mu width (e.g. 0.5)'
+       read *, dmu
+       delta_mu=dmu
+       delta_am=dmu
        call tctv_JTH07(ngal,mag_min,mag_max,mu,mt,am,bin,delta_am,delta_mu)
     elseif (answer.ne.1 .or. answer.ne.2)then
        print*, 'you must enter 1 or 2'
