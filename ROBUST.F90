@@ -45,12 +45,12 @@ contains
     implicit none
     integer Ngal,mstar_max
     PARAMETER (mstar_max=200)
-    integer m,igal,jgal,iwksp(Ngal),tc_inc
+    integer m,igal,jgal,tc_inc
     real(kind=4) :: t_v(mstar_max),zmax,am(Ngal),mu(Ngal),mt(Ngal),mag_max,bin
     real(kind=4) :: appml(mstar_max),mag_min,absmlim,t_c(mstar_max),maxmaglim
     real(kind=4) :: varsum,s1,s2,s3,s4,r(mstar_max,Ngal),n(mstar_max,Ngal),p(mstar_max,Ngal)
     real(kind=4) :: zeta(mstar_max,Ngal),var(mstar_max,Ngal)
-    real(kind=4) :: wksp(Ngal),tau(mstar_max,Ngal)
+    real(kind=4) :: tau(mstar_max,Ngal)
 
 
     print *,'CALLING: SUBROUTINE TCTV_FAINT'
@@ -69,44 +69,47 @@ contains
     write(90,*)'# m*        Tc(m*)      Tv(m*)'
 
     print *, 'computing Tc first'
-    !    call sort3(Ngal,mu,mt,am,wksp,iwksp)
+    r	  = 0.0
+    n	  = 0.0
+    zeta  = 0.0
+    appml = 0.0
+    t_c   = 0.0
     call SORT3(Ngal,mu,mt,am)
     do m = 1,tc_inc
-       appml(m) = mag_min + bin*(m-1)        
-       t_c(m)   = 0.0        
-       varsum = 0.0
-       do igal = 1,Ngal     
+        appml(m) = mag_min + bin*(m-1)
+        varsum = 0.0
+        do igal = 1,Ngal
           s1			= 0.0
           s2			= 0.0
-          r(m,igal)	= 0.0
-          n(m,igal)	= 0.0
-          zeta(m,igal)= 0.0
+          if(mt(igal) .le. appml(m)) then !REMOVE ALL GALS > m*
+            absmlim = appml(m)- mu(igal)
+                if(am(igal) .le. absmlim) then
+                    do jgal = igal,1,-1
 
-          if(mt(igal) .gt. appml(m)) goto 556 !REMOVE ALL GALS > m*
-          absmlim = appml(m)- mu(igal) 
-          if(am(igal) .gt. absmlim) goto 556 
-          do jgal = igal,1,-1
-
-             if(mt(jgal) .gt. appml(m))   goto 555 
-             if(am(jgal) .gt. absmlim)    goto 555      
-             if(mu(jgal) .gt. mu(igal))   goto 555	
-             if(am(jgal) .le. am(igal))s1 = s1 + 1.0             
-             if(am(jgal) .gt. am(igal))s2 = s2 + 1.0                
-555       enddo
-          r(m,igal) = s1
-          n(m,igal) = s1+s2          
-          zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)                         
-          var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
-          if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
-          t_c(m) = t_c(m) + zeta(m,igal) - 0.50        
-556    enddo
-       t_c(m) = t_c(m)/sqrt(varsum)
+                        if(mt(jgal) .le. appml(m)) then
+                            if(am(jgal) .le. absmlim) then
+                                if(mu(jgal) .le. mu(igal)) then
+                                    if(am(jgal) .le. am(igal))s1 = s1 + 1.0
+                                    if(am(jgal) .gt. am(igal))s2 = s2 + 1.0
+                                endif
+                            endif
+                        endif
+                    enddo
+                    r(m,igal) = s1
+                    n(m,igal) = s1+s2          
+                    zeta(m,igal)  = r(m,igal)/(n(m,igal)+1.0)                         
+                    var(m,igal)   = (n(m,igal)-1.0)/(12.0*(n(m,igal)+1.0))
+                    if(var(m,igal).ne.0.0)varsum = varsum + var(m,igal)
+                    t_c(m) = t_c(m) + zeta(m,igal) - 0.50
+                endif
+            endif
+        enddo
+        t_c(m) = t_c(m)/sqrt(varsum)
     enddo
 
     print *,'Now computing Tv'
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
-    !    call sort3(Ngal,am,mt,mu,wksp,iwksp)
     call SORT3(Ngal,am,mt,mu)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1) 
@@ -157,7 +160,7 @@ contains
     implicit none
     integer ngal,mstar_max
     PARAMETER (mstar_max=200)
-    integer       :: m,igal,jgal,tc_inc,iwksp(ngal)
+    integer       :: m,igal,jgal,tc_inc
     real(kind=4)  :: mt(ngal),mu(ngal),am(ngal),zmax,zmin,nn(mstar_max,ngal)
     real(kind=4)  :: appml(mstar_max),t_c(mstar_max),t_v(mstar_max)
     real(kind=4)  :: varsum,s1,s2,s3,s4,r(mstar_max,ngal),n(mstar_max,ngal),bin
@@ -183,17 +186,18 @@ contains
     print *, 'computing Tc first'
     !    call sort3(Ngal,mu,mt,am,wksp,iwksp)
     call SORT3(Ngal,mu,mt,am)
+
+    r     = 0.0
+    n     = 0.0
+    zeta  = 0.0
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)
        t_c(m)   = 0.0        
        varsum   = 0.0       
        varsumzeta=0.0
        do igal =1,Ngal 
-          s1            = 0.0
-          s2            = 0.0
-          r(m,igal)     = 0.0
-          n(m,igal)     = 0.0        
-          zeta(m,igal)  = 0.0 
+          s1  = 0.0
+          s2  = 0.0
 
           if(mt(igal).gt.appml(m)) goto 556	!REMOVE ALL GALS > m*
           if(mt(igal).lt.mag_min)  goto 556
@@ -224,14 +228,11 @@ contains
 556    enddo
 
        t_c(m) = t_c(m)/sqrt(varsum)
-       !	   write(6,111)m,appml(m),t_c(m)
-       ! 111	   format(i4,1x,f6.2,1x,f11.6)
     enddo
 
     print *,'Now computing Tv'
     print *,''
     print *,'# m*    Tc(m*)        Tv(m*)'
-    !    call sort3(Ngal,am,mt,mu,wksp,iwksp)
     call SORT3(Ngal,am,mt,mu)
     do m = 1,tc_inc
        appml(m) = mag_min + bin*(m-1)

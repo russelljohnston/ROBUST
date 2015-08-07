@@ -34,8 +34,8 @@
 
     print *,'--------------------------------------------'
 111 print *,'Which ROBUST version would you like to run?'
-    print *,'1 - Rauzy 2001 (faint app mag lim only)'
-    print *,'2 - Johnston et al 2007  - faint and bright lim'
+    print *,'1 - Rauzy 2001 (faint app mag lim only) - includes JTH07 Tv estimator'
+    print *,'2 - Johnston et al 2007  - faint and bright lim - Tc & Tv estimator'
     read *, answer
     if (answer.eq.1)then
        fileout='tctv_faint_results.out'
@@ -43,7 +43,6 @@
        rewind(90)
        call tctv_R01(ngal,mag_min,mag_max,mu,mt,am,bin)
     elseif (answer.eq.2)then
-       !open unit 91 for writing out file in tctv_bright subroutine
        fileout='tctv_bright_results.out'
        open(unit=90,file=trim(fileout),status='unknown')
        rewind(90)
