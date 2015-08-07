@@ -1,5 +1,5 @@
 # ROBUST
-Module to compute the Tc and Tv completeness statistics:
+Module to compute the Tc and Tv completeness statistics in Fortran and f2py python wrapped:
 
 Authors:
 
@@ -38,6 +38,23 @@ will also create and example executable 'EXAMPLE.exe'
 % ./run.sh
 
 this will run the EXAMPLE.exe and also plot the  results using ipython shell
+
+--- Python version ---
+
+
+The following files are associated only with the python version of this code:
+
+ROBUST_f2py.F90 (amended version of the ROBUST.F90 module)
+
+robust.so (f2py wrapper of ROBUST_f2py.F90)
+
+robustPY.py  (simple python script showing how to implement robust.so)
+
+
+should you need to remake robust.so, use the following command:
+
+f2py -c --fcompiler=gfortran -m robust ROBUST_f2py.F90
+
 
 
 
