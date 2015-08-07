@@ -18,4 +18,16 @@ tctv_JTH07: Computes the Tc and Tv statistics taking into about doubly truncated
 SORT3.F90:  based on  Numerical Recipes, Created by  http://www.science-softcon.de/autochem/box-dir/box_html/998.html
 
 
+To run the example (which uses the data based on JTH07)
+
+% make 
+
+(this will output the robust.mod file which can be used in your program)
+will also create and example executable 'EXAMPLE.exe' 
+
+% ./run.sh
+
+this will run the EXAMPLE.exe and also plot the  results using ipython shell
+
+
 
