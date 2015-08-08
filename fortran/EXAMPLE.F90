@@ -22,7 +22,7 @@
 
     print *,'Reading in test data'
     filein='testdata.txt'
-    open(unit=14,file=filein,status='old')
+    open(unit=14,file='../'//filein,status='old')
     do i = 1,ngal
        read(14,*,err=998,end=999)mt(i),am(i),mu(i)
 998 enddo
