@@ -53,7 +53,7 @@
     elseif (answer.eq.2)then
        open(unit=90,file=trim(fileout),status='unknown')
        rewind(90)
-       print *,'input delta_mu width (e.g. 0.5)'
+       print *,'input delta_mu and delta_am width (e.g. 0.5)'
        read *, dmu
        delta_mu=dmu
        delta_am=dmu
