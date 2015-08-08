@@ -51,7 +51,7 @@ print
 
 
 ## READ IN THE TEST DATA ##
-mt,am,mu = np.loadtxt('testdata.txt',usecols=(0,1,2), unpack='true')
+mt,am,mu = np.loadtxt('../testdata.txt',usecols=(0,1,2), unpack='true')
 
 
 # SET INPUT PARAMETERS.
