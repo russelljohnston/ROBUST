@@ -10,14 +10,6 @@ plt.close()
 
 fin = sys.argv[1]
 
-#plt.rc('text', usetex=True)
-#plt.rc('font', family='serif')
-#mtb.rcParams['text.latex.preamble'] = [
-#r'\usepackage{siunitx}', 
-#r'\sisetup{detect-all}', 
-#r'\usepackage{helvet}',  
-#r'\usepackage{sansmath}',
-#r'\sansmath']
 
 params = {'legend.fontsize': 19}
 py.rcParams.update(params)
